@@ -1,0 +1,52 @@
+---
+- name: 'Установка и настройка docker'
+  hosts: all
+  become: true
+  tasks: 
+    - name: 'Установка yum-utils'
+      yum: 
+        name: yum-utils
+        state: latest
+    - name: 'Добавляем репозиторий докера'
+      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    - name: 'Установка docker'
+      yum: 
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io 
+        - docker-buildx-plugin
+        - docker-compose-plugin
+    - name: Открываем порт 8080 на firewalld 
+      firewalld:
+        port: 8080/tcp
+        port: 80/tcp
+        permanent: true
+        state: enabled
+    - name: restart firewalld
+      systemd: 
+        name: firewalld
+        state: restarted
+    - name: 'Создание директории'
+      file: 
+        path: /home/docker
+        state: directory
+    - name: 'Копирование dockerfile'
+      copy: 
+        src: ./Dockerfile
+        dest: /home/docker/Dockerfile
+    - name: 'Копирование index.html'
+      copy:
+        src: ./index.html
+        dest: /home/docker/index.html
+    - name: 'Старт службы docker'
+      systemd:
+        state: started
+        name: docker
+        enabled: true
+    - name: 'Запуск build docker'
+      shell: cd /home/docker/ && docker build -t mynginx .
+    - name: 'Запуск контейнера'
+      shell: docker run -dt -p 80:80 --name webserver -d mynginx
