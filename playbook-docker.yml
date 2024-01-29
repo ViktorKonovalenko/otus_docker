@@ -41,12 +41,16 @@
       copy:
         src: ./index.html
         dest: /home/docker/index.html
+    - name: 'Копирование default.conf'
+      copy:
+        src: ./default.conf
+        dest: /home/docker/default.conf
     - name: 'Старт службы docker'
       systemd:
         state: started
         name: docker
         enabled: true
     - name: 'Запуск build docker'
-      shell: cd /home/docker/ && docker build -t mynginx .
+      shell: cd /home/docker/ && docker build -t lesson_docker . --no-cache
     - name: 'Запуск контейнера'
-      shell: docker run -dt -p 80:80 --name webserver -d mynginx
+      shell: docker run -dt -p 80:80 --name webserver -d lesson_docker
